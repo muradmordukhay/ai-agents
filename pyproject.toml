@@ -1,0 +1,11 @@
+[project]
+name = "ai-agents"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "anthropic>=0.79.0",
+    "openai>=2.21.0",
+    "tiktoken>=0.12.0",
+]
