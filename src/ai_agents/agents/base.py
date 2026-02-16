@@ -26,19 +26,23 @@ async def run_agent(
     model: str = MODEL,
     system_prompt: str | None = None,
     cwd: str | Path | None = None,
+    permission_mode: str = "default",
 ) -> AgentResult:
     """Execute an agent query and return the result with metadata.
 
     All agents should call this function instead of using query() directly.
     It handles API key validation, error handling, message extraction, and
     cost tracking.
+
+    The permission_mode defaults to "default" (requires approval for writes).
+    Agents with read-only tools can pass "bypassPermissions" explicitly.
     """
     get_api_key()  # validate early
 
     options = ClaudeAgentOptions(
         model=model,
         max_turns=max_turns,
-        permission_mode="bypassPermissions",
+        permission_mode=permission_mode,
     )
     if allowed_tools:
         options.allowed_tools = allowed_tools

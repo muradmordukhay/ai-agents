@@ -137,6 +137,7 @@ async def review(target: str, focus: str = "all") -> None:
         prompt=prompt,
         allowed_tools=AGENT_CONFIG["allowed_tools"],
         system_prompt="You are a senior code reviewer. Be thorough but concise.",
+        permission_mode="bypassPermissions",  # safe: read-only tools only
     )
 
     _print_agent_metadata(agent_result)
