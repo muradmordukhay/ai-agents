@@ -1,6 +1,8 @@
 # ai-agents
 
-Personal AI agents powered by [Claude Agent SDK](https://docs.anthropic.com/en/docs/claude-code/sdk). Each agent is a focused tool that automates a specific development task using Claude's agentic capabilities.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+AI agents powered by [Claude Agent SDK](https://docs.anthropic.com/en/docs/claude-code/sdk). Each agent is a focused tool that automates a specific development task using Claude's agentic capabilities.
 
 ## Prerequisites
 
@@ -13,7 +15,7 @@ Personal AI agents powered by [Claude Agent SDK](https://docs.anthropic.com/en/d
 
 ```bash
 # Clone and install
-git clone <repo-url> && cd ai-agents
+git clone https://github.com/muradmordukhay/ai-agents.git && cd ai-agents
 uv sync
 
 # Set your API key (add to ~/.zshrc.local or equivalent)
@@ -199,3 +201,11 @@ After cloning, install pre-commit hooks:
 ```bash
 uv run pre-commit install
 ```
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code style, and the PR process.
+
+## License
+
+[MIT](LICENSE)

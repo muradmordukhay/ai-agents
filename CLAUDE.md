@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-Personal AI agents powered by Claude Agent SDK. Each agent is a focused tool that automates a specific development task (code review, test generation, documentation, etc.) using Claude's agentic capabilities.
+AI agents powered by Claude Agent SDK. Each agent is a focused tool that automates a specific development task (code review, test generation, documentation, etc.) using Claude's agentic capabilities.
 
 ## Development
 
