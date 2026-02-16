@@ -31,12 +31,18 @@ def main() -> None:
 
         try:
             asyncio.run(review(target=args.target, focus=args.focus))
-        except RuntimeError as exc:
+        except (FileNotFoundError, ValueError, RuntimeError) as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
         except KeyboardInterrupt:
             print("\nInterrupted.", file=sys.stderr)
             sys.exit(130)
+        except Exception as exc:
+            print(
+                f"Unexpected error: {type(exc).__name__}: {exc}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     else:
         parser.print_help()
         sys.exit(1)
