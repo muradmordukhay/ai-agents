@@ -3,12 +3,9 @@ import os
 
 def get_api_key() -> str:
     """Validate and return the Anthropic API key from the environment."""
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY is not set. "
-            "Export it in ~/.zshrc.local: export ANTHROPIC_API_KEY='sk-ant-...'"
-        )
+        raise RuntimeError("ANTHROPIC_API_KEY is not set.")
     return key
 
 

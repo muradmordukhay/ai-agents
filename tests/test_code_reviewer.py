@@ -1,4 +1,8 @@
-from ai_agents.agents.code_reviewer import CodeReviewResult, _parse_result
+import os
+
+import pytest
+
+from ai_agents.agents.code_reviewer import CodeReviewResult, _parse_result, _sanitize, review
 
 
 class TestParseResultValidJSON:
@@ -93,3 +97,56 @@ class TestParseResultInvalid:
         # Missing files_reviewed — Pydantic validation should catch this
         raw = '{"findings": [], "summary": "OK"}'
         assert _parse_result(raw) is None
+
+
+class TestParseResultRobustness:
+    def test_json_with_trailing_text(self):
+        """raw_decode should stop at the end of the JSON object."""
+        raw = '{"findings": [], "summary": "OK", "files_reviewed": 1} extra text here'
+        result = _parse_result(raw)
+        assert result is not None
+        assert result.summary == "OK"
+
+    def test_multiple_json_objects_takes_first(self):
+        """Should parse the first valid JSON object, not span across both."""
+        raw = '{"findings": [], "summary": "First", "files_reviewed": 1} {"other": true}'
+        result = _parse_result(raw)
+        assert result is not None
+        assert result.summary == "First"
+
+
+class TestSanitize:
+    def test_strips_ansi_escape(self):
+        assert _sanitize("\x1b[31mred\x1b[0m") == "red"
+
+    def test_strips_control_chars(self):
+        assert _sanitize("hello\x00world") == "helloworld"
+
+    def test_preserves_normal_text(self):
+        assert _sanitize("normal text\nwith newlines") == "normal text\nwith newlines"
+
+    def test_preserves_tabs(self):
+        assert _sanitize("col1\tcol2") == "col1\tcol2"
+
+    def test_preserves_unicode(self):
+        result = _sanitize("emoji: ❌ ⚠️")
+        assert "❌" in result
+        assert "⚠" in result
+
+
+class TestReviewValidation:
+    @pytest.mark.asyncio
+    async def test_rejects_nonexistent_path(self):
+        with pytest.raises(FileNotFoundError):
+            await review("/nonexistent/path/to/nowhere")
+
+    @pytest.mark.asyncio
+    async def test_rejects_fifo(self, tmp_path):
+        """FIFO should be rejected — only files and directories allowed."""
+        fifo = tmp_path / "test_fifo"
+        try:
+            os.mkfifo(fifo)
+        except OSError:
+            pytest.skip("Cannot create FIFO on this platform")
+        with pytest.raises(ValueError, match="must be a file or directory"):
+            await review(str(fifo))
