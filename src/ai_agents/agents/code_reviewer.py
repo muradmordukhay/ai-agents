@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from ai_agents.agents.base import run_agent
+from ai_agents.agents.base import AgentResult, run_agent
 
 AGENT_CONFIG = {
     "name": "code-reviewer",
@@ -110,6 +111,20 @@ def _print_findings(target: Path, result: CodeReviewResult) -> None:
     print(f"Summary: {result.summary}")
 
 
+def _print_agent_metadata(agent_result: AgentResult) -> None:
+    """Print agent run metadata (cost, duration, turns) to stderr."""
+    parts = []
+    if agent_result.cost_usd is not None:
+        parts.append(f"${agent_result.cost_usd:.4f}")
+    if agent_result.duration_ms is not None:
+        seconds = agent_result.duration_ms / 1000
+        parts.append(f"{seconds:.1f}s")
+    if agent_result.num_turns is not None:
+        parts.append(f"{agent_result.num_turns} turns")
+    if parts:
+        print(f"  [meta] {' | '.join(parts)}", file=sys.stderr)
+
+
 async def review(target: str, focus: str = "all") -> None:
     """Review code at the given path and print structured findings."""
     target_path = Path(target).resolve()
@@ -118,16 +133,18 @@ async def review(target: str, focus: str = "all") -> None:
 
     prompt = _build_prompt(target_path, focus)
 
-    raw_result = await run_agent(
+    agent_result: AgentResult = await run_agent(
         prompt=prompt,
         allowed_tools=AGENT_CONFIG["allowed_tools"],
         system_prompt="You are a senior code reviewer. Be thorough but concise.",
     )
 
-    result = _parse_result(raw_result)
+    _print_agent_metadata(agent_result)
+
+    result = _parse_result(agent_result.text)
     if result is None:
         # Structured parsing failed — print raw output
-        print(raw_result)
+        print(agent_result.text)
         return
 
     _print_findings(target_path, result)
