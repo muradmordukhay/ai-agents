@@ -86,6 +86,7 @@ class AgentResult:
 | `model` | `str` | `claude-sonnet-4-20250514` | Claude model to use |
 | `system_prompt` | `str` | `None` | Custom system prompt |
 | `cwd` | `str \| Path` | `None` | Working directory for the agent |
+| `permission_mode` | `str` | `"default"` | SDK permission mode (see Security) |
 
 ### Tool Sandboxing
 
@@ -137,6 +138,7 @@ async def run(target: str) -> None:
         prompt=f"Analyze: {target}",
         allowed_tools=AGENT_CONFIG["allowed_tools"],
         system_prompt="You are a helpful assistant.",
+        permission_mode="bypassPermissions",  # only if tools are read-only
     )
     # Parse agent_result.text into your Pydantic model
     print(agent_result.text)
@@ -159,6 +161,16 @@ if args.command == "my-agent":
 ```bash
 uv run agent my-agent path/to/target
 ```
+
+## Security
+
+The framework applies defense-in-depth:
+
+- **Safe permission default**: `run_agent()` defaults to `permission_mode="default"`, which requires approval for writes. Agents that only use read-only tools (like the code reviewer) can explicitly opt into `"bypassPermissions"` at the call site.
+- **Tool allowlisting**: Each agent declares its `allowed_tools`. The code reviewer is restricted to `["Read", "Glob", "Grep"]` — no writes, no shell, no network.
+- **Input sanitization**: File paths are escaped with `json.dumps()` before prompt interpolation to prevent prompt injection. Paths are validated to be regular files or directories.
+- **Output sanitization**: All agent-provided text is stripped of ANSI escape sequences and control characters before printing, preventing terminal injection.
+- **Secret handling**: API keys are read from environment variables only, never hardcoded. Pre-commit hooks (`detect-private-key`, `gitleaks`) block accidental commits of secrets.
 
 ## Known Limitations
 
