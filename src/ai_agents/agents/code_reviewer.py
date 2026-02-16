@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -67,6 +68,15 @@ If there are no issues, return an empty findings array with a positive summary.
 Respond ONLY with the JSON — no markdown fences, no explanation."""
 
 
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+
+
+def _sanitize(text: str) -> str:
+    """Strip ANSI escape sequences and control characters from agent output."""
+    text = _ANSI_RE.sub("", text)
+    return "".join(ch for ch in text if ch.isprintable() or ch in "\n\t")
+
+
 def _parse_result(raw: str) -> CodeReviewResult | None:
     """Parse the agent's JSON response into a validated Pydantic model."""
     text = raw.strip()
@@ -75,17 +85,22 @@ def _parse_result(raw: str) -> CodeReviewResult | None:
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
-    # Find the JSON object boundaries
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start == -1 or end == 0:
-        return None
+    # Use raw_decode to find the first valid JSON object
+    decoder = json.JSONDecoder()
+    pos = 0
+    while pos < len(text):
+        start = text.find("{", pos)
+        if start == -1:
+            return None
+        try:
+            data, _end = decoder.raw_decode(text, start)
+            return CodeReviewResult.model_validate(data)
+        except json.JSONDecodeError:
+            pos = start + 1
+        except ValueError:
+            return None
 
-    try:
-        data = json.loads(text[start:end])
-        return CodeReviewResult.model_validate(data)
-    except (json.JSONDecodeError, ValueError):
-        return None
+    return None
 
 
 def _print_findings(target: Path, result: CodeReviewResult) -> None:
@@ -103,13 +118,13 @@ def _print_findings(target: Path, result: CodeReviewResult) -> None:
         location = finding.file
         if finding.line:
             location += f":{finding.line}"
-        print(f"{icon} [{finding.severity.upper()}] {location}")
-        print(f"  {finding.message}")
+        print(f"{icon} [{finding.severity.upper()}] {_sanitize(location)}")
+        print(f"  {_sanitize(finding.message)}")
         if finding.suggestion:
-            print(f"  → {finding.suggestion}")
+            print(f"  → {_sanitize(finding.suggestion)}")
         print()
 
-    print(f"Summary: {result.summary}")
+    print(f"Summary: {_sanitize(result.summary)}")
 
 
 def _print_agent_metadata(agent_result: AgentResult) -> None:
@@ -147,8 +162,8 @@ async def review(target: str, focus: str = "all") -> None:
 
     result = _parse_result(agent_result.text)
     if result is None:
-        # Structured parsing failed — print raw output
-        print(agent_result.text)
+        # Structured parsing failed — print sanitized raw output
+        print(_sanitize(agent_result.text))
         return
 
     _print_findings(target_path, result)
