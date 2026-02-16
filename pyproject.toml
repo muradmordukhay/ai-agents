@@ -8,11 +8,23 @@ version = "0.1.0"
 description = "AI agents powered by Claude Agent SDK"
 readme = "README.md"
 license = {file = "LICENSE"}
+authors = [{name = "Murad Mordukhay"}]
 requires-python = ">=3.13"
+keywords = ["ai", "agents", "claude", "code-review", "claude-agent-sdk"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "claude-agent-sdk>=0.1.36",
     "pydantic>=2.11",
 ]
+
+[project.urls]
+Repository = "https://github.com/muradmordukhay/ai-agents"
+Issues = "https://github.com/muradmordukhay/ai-agents/issues"
 
 [project.scripts]
 agent = "ai_agents.cli:main"
