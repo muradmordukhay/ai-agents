@@ -42,7 +42,8 @@ class CodeReviewResult(BaseModel):
 
 
 def _build_prompt(target_path: Path, focus: str) -> str:
-    return f"""Review the code at: {target_path}
+    safe_path = json.dumps(str(target_path))
+    return f"""Review the code at: {safe_path}
 
 {FOCUS_INSTRUCTIONS[focus]}
 
@@ -129,7 +130,9 @@ async def review(target: str, focus: str = "all") -> None:
     """Review code at the given path and print structured findings."""
     target_path = Path(target).resolve()
     if not target_path.exists():
-        raise FileNotFoundError(f"Target not found: {target}")
+        raise FileNotFoundError(f"Target not found: {target_path}")
+    if not target_path.is_file() and not target_path.is_dir():
+        raise ValueError(f"Target must be a file or directory: {target_path}")
 
     prompt = _build_prompt(target_path, focus)
 
